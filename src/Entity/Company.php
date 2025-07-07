@@ -2,37 +2,62 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\CompanyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CompanyRepository::class)]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read_company']],
+    denormalizationContext: ['groups' => ['write_company']],
+    security: "is_granted('ROLE_COMPANY')"
+)]
+#[GetCollection(security: "is_granted('ROLE_USER')")]
+#[Get(security: "is_granted('ROLE_USER')")]
+#[Post(security: "is_granted('ROLE_COMPANY')")]
+#[Patch(security: "is_granted('ROLE_COMPANY')")]
+#[Delete(security: "is_granted('ROLE_COMPANY')")]
+
 class Company
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read_company', 'read_offer'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read_company', 'write_company','read_offer'])]
     private ?string $name = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['read_company', 'write_company'])]
     private ?string $description = null;
 
     #[ORM\ManyToOne(inversedBy: 'companies')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?user $user = null;
+    #[Groups(['read_company'])]
+    private ?User $user = null;
 
     #[ORM\ManyToOne(inversedBy: 'companies')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['read_company', 'write_company','read_offer'])]
     private ?Sector $sector = null;
 
     /**
      * @var Collection<int, Offer>
      */
     #[ORM\OneToMany(targetEntity: Offer::class, mappedBy: 'company')]
+    #[Groups(['read_company'])]
     private Collection $offers;
 
     public function __construct()
@@ -69,12 +94,12 @@ class Company
         return $this;
     }
 
-    public function getUser(): ?user
+    public function getUser(): ?User
     {
         return $this->user;
     }
 
-    public function setUser(?user $user): static
+    public function setUser(?User $user): static
     {
         $this->user = $user;
 

@@ -2,40 +2,74 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Enum\OfferStatus;
 use App\Repository\OfferRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: OfferRepository::class)]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read_offer']],
+    denormalizationContext: ['groups' => ['write_offer']],
+    security: "is_granted('ROLE_USER')"
+)]
+#[GetCollection()]
+#[Get()]
+#[ApiFilter(SearchFilter::class, properties: [
+    'title' => 'ipartial',
+    'contractType' => 'exact',
+    'company.name' => 'ipartial'
+])]
+#[ApiFilter(OrderFilter::class, properties: ['salary', 'publicationDate'])]
+#[Post(security: "is_granted('ROLE_COMPANY')")]
+#[Patch(security: "is_granted('ROLE_COMPANY')")]
+#[Delete(security: "is_granted('ROLE_COMPANY')")]
 class Offer
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read_offer'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?string $description = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?string $contractType = null;
 
     #[ORM\Column]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?float $salary = null;
 
     #[ORM\Column]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?\DateTime $publicationDate = null;
 
     #[ORM\Column(enumType: OfferStatus::class)]
+    #[Groups(['read_offer', 'write_offer'])]
     private ?OfferStatus $status = null;
 
     #[ORM\ManyToOne(inversedBy: 'offers')]
+    #[Groups(['read_offer'])]
     #[ORM\JoinColumn(nullable: false)]
     private ?Company $company = null;
 
@@ -43,6 +77,7 @@ class Offer
      * @var Collection<int, Tag>
      */
     #[ORM\ManyToMany(targetEntity: Tag::class, inversedBy: 'offers')]
+    #[Groups(['read_offer'])]
     private Collection $tags;
 
     /**

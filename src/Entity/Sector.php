@@ -2,26 +2,46 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use App\Repository\SectorRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: SectorRepository::class)]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read_sector']],
+    denormalizationContext: ['groups' => ['write_sector']],
+    security: "is_granted('ROLE_ADMIN')"
+)]
+#[GetCollection(security: "is_granted('ROLE_USER')")]
+#[Get(security: "is_granted('ROLE_USER')")]
+#[Post(security: "is_granted('ROLE_ADMIN')")]
+#[Patch(security: "is_granted('ROLE_ADMIN')")]
+#[Delete(security: "is_granted('ROLE_ADMIN')")]
 class Sector
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read_sector', 'read_company'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['read_sector', 'write_sector', 'read_company'])]
     private ?string $name = null;
 
     /**
      * @var Collection<int, Company>
      */
     #[ORM\OneToMany(targetEntity: Company::class, mappedBy: 'sector', orphanRemoval: true)]
+    #[Groups(['read_sector'])]
     private Collection $companies;
 
     public function __construct()
