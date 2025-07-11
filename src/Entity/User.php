@@ -7,6 +7,8 @@ use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
+use ApiPlatform\OpenApi\Model\Operation;
+use App\Controller\Api\MeAction;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -19,13 +21,20 @@ use Symfony\Component\Serializer\Annotation\Groups;
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[ApiResource(
     normalizationContext: ['groups' => ['read_user']],
-    denormalizationContext: ['groups' => ['write_user']],
-    security: "is_granted('ROLE_ADMIN')"
+    denormalizationContext: ['groups' => ['write_user']]
 )]
 #[GetCollection(security: "is_granted('ROLE_ADMIN')")]
-#[Get(security: "object == user or is_granted('ROLE_ADMIN')")]
-#[Patch(security: "object == user or is_granted('ROLE_ADMIN')")]
-#[Delete(security: "is_granted('ROLE_ADMIN')")]
+#[Get(uriTemplate: '/me',
+    security: 'is_granted("ROLE_USER")',
+    read: false,
+    controller: MeAction::class,
+    openapi: new Operation(
+        summary: 'Show current user profile'
+    ))]
+#[Patch(security: 'is_granted("ROLE_USER") and object.id == user.id',)]
+#[Delete(
+    security: 'is_granted("ROLE_USER") and object.id == user.id',
+)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
